@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none';">
+<meta name="referrer" content="no-referrer">
+<title>بيت الحكمة · The Talking Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Spectral:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FFFFFF;
+    --panel:#F6F6F4;
+    --ink:#20201E;
+    --ink-soft:#5C5B56;
+    --indigo:#2E4A66;
+    --gold:#A9782E;
+    --terracotta:#8B4635;
+    --line: rgba(32,32,30,0.14);
+    --line-soft: rgba(32,32,30,0.08);
+  }
+
+  *{box-sizing:border-box;}
+
+  html,body{
+    margin:0;
+    min-height:100%;
+    background-color:var(--bg);
+    color:var(--ink);
+    font-family:'Spectral', serif;
+  }
+
+  [lang-ar], .ar-text{
+    font-family:'Amiri', serif;
+  }
+
+  .page{
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 48px 20px 80px;
+  }
+
+  .frame{
+    background: var(--bg);
+    border: 1px solid var(--line);
+  }
+
+  .frame-inner{
+    padding: 44px 36px 32px;
+  }
+
+  header{
+    text-align:center;
+    margin-bottom: 34px;
+  }
+
+  header .title-ar{
+    font-family:'Amiri', serif;
+    font-weight:700;
+    font-size: 2.75rem;
+    color: var(--ink);
+    margin: 0;
+    line-height:1.25;
+  }
+
+  header .title-en{
+    font-family:'Spectral', serif;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--gold);
+    letter-spacing: 0.02em;
+    margin: 8px 0 0;
+  }
+
+  header .description{
+    margin: 18px auto 0;
+    max-width: 46ch;
+    font-size: 0.98rem;
+    line-height: 1.75;
+    color: var(--ink-soft);
+  }
+
+  .display{
+    text-align:center;
+    padding: 18px 12px 26px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 26px;
+    min-height: 108px;
+  }
+
+  .display .trail{
+    font-size: 1rem;
+    color: var(--ink-soft);
+    min-height: 1.4em;
+    direction: ltr;
+  }
+
+  .display .answer{
+    font-family:'Amiri', serif;
+    font-weight: 700;
+    font-size: 3.2rem;
+    color: var(--gold);
+    direction: ltr;
+    line-height:1.2;
+    margin-top: 6px;
+    word-break: break-word;
+  }
+
+  .display .answer.error{
+    font-family:'Spectral', serif;
+    font-weight:600;
+    font-size: 1.3rem;
+    color: var(--terracotta);
+    direction: rtl;
+  }
+
+  form.input-row{
+    display:flex;
+    gap: 10px;
+    align-items: stretch;
+  }
+
+  input[type="text"]{
+    flex:1;
+    font-family: inherit;
+    font-size: 1.1rem;
+    padding: 14px 16px;
+    background: var(--panel);
+    border: none;
+    border-bottom: 2px solid var(--indigo);
+    color: var(--ink);
+    outline: none;
+  }
+  input[type="text"]::placeholder{
+    color: var(--ink-soft);
+    opacity: 0.7;
+  }
+  input[type="text"]:focus{
+    border-bottom-color: var(--gold);
+  }
+
+  button.calc-btn{
+    font-family: 'Amiri', serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+    padding: 0 22px;
+    background: var(--indigo);
+    color: var(--bg);
+    border: 1px solid var(--indigo);
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  button.calc-btn:hover{ background: var(--terracotta); border-color: var(--terracotta); }
+  button.calc-btn:active{ transform: translateY(1px); }
+
+  .mic-btn{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width: 48px;
+    flex-shrink:0;
+    background: var(--panel);
+    border: none;
+    border-bottom: 2px solid var(--gold);
+    color: var(--ink);
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .mic-btn:hover{ background: var(--gold); color: var(--bg); }
+  .mic-btn.listening{
+    background: var(--terracotta);
+    color: var(--bg);
+    border-bottom-color: var(--terracotta);
+    animation: pulse 1.1s ease-in-out infinite;
+  }
+  @keyframes pulse{
+    0%,100%{ box-shadow: 0 0 0 0 rgba(139,70,53,0.45); }
+    50%{ box-shadow: 0 0 0 8px rgba(139,70,53,0); }
+  }
+
+  .mic-row{
+    display:flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items:center;
+    margin-top: 10px;
+    gap: 8px 10px;
+  }
+  .mic-status{
+    font-size: 0.85rem;
+    color: var(--terracotta);
+    min-height: 1.2em;
+  }
+  .lang-toggle{
+    display:flex;
+    border: 1px solid var(--line);
+  }
+  .lang-btn{
+    font-family: inherit;
+    font-size: 0.8rem;
+    padding: 5px 12px;
+    background: transparent;
+    border: none;
+    color: var(--ink-soft);
+    cursor: pointer;
+  }
+  .lang-btn.active{
+    background: var(--indigo);
+    color: var(--bg);
+  }
+
+  .hint{
+    margin-top: 12px;
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    text-align:center;
+  }
+
+  .history{
+    margin-top: 30px;
+  }
+  .history-title{
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+    border-bottom: 1px solid var(--line-soft);
+    padding-bottom: 6px;
+    margin-bottom: 10px;
+    display:flex;
+    justify-content: space-between;
+  }
+  .history-list{
+    display:flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 260px;
+    overflow-y:auto;
+  }
+  .history-item{
+    display:flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px dashed var(--line-soft);
+    font-size: 0.95rem;
+  }
+  .history-item .h-in{
+    color: var(--ink-soft);
+    flex: 1;
+  }
+  .history-item .h-out{
+    font-family:'Amiri', serif;
+    font-weight:700;
+    color: var(--indigo);
+    direction: ltr;
+    white-space: nowrap;
+  }
+
+  details.legend{
+    margin-top: 30px;
+    border-top: 1px solid var(--line-soft);
+    padding-top: 14px;
+  }
+  details.legend summary{
+    cursor:pointer;
+    color: var(--indigo);
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+  .legend-grid{
+    margin-top: 14px;
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 22px;
+  }
+  @media (max-width: 520px){
+    .legend-grid{ grid-template-columns: 1fr; }
+    header .title-ar{ font-size: 2rem; }
+    .display .answer{ font-size: 2.4rem; }
+  }
+  .legend-group h4{
+    margin: 0 0 6px;
+    font-size: 0.85rem;
+    color: var(--terracotta);
+  }
+  .legend-group p{
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    line-height: 1.7;
+  }
+  .legend-group p .ex{
+    color: var(--ink);
+  }
+
+  footer{
+    text-align:center;
+    margin-top: 26px;
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+    opacity: 0.8;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="frame">
+    <div class="frame-inner">
+      <header>
+        <h1 class="title-ar">بيت الحكمة</h1>
+        <p class="title-en">THE TALKING CALCULATOR</p>
+        <p class="description">آلة حاسبة بتفهم الكلام العادي — تكتب أو تتكلم بالعربي (فصحى أو مصري) أو الإنجليزي، وهي بتحول كلامك لعملية حسابية وتديك الناتج على طول.</p>
+      </header>
+
+      <div class="display" id="display">
+        <div class="trail" id="trail">&nbsp;</div>
+        <div class="answer" id="answer">؟</div>
+      </div>
+
+      <form class="input-row" id="calc-form" autocomplete="off">
+        <input type="text" id="calc-input" placeholder="مثال: اتناشر على سبعة … or twelve times three" />
+        <button type="button" class="mic-btn" id="mic-btn" title="اتكلم بدل ما تكتب · Speak instead of typing" aria-label="Speak">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+            <line x1="12" y1="19" x2="12" y2="23"/>
+            <line x1="8" y1="23" x2="16" y2="23"/>
+          </svg>
+        </button>
+        <button type="submit" class="calc-btn">احسب</button>
+      </form>
+      <div class="mic-row">
+        <span class="mic-status" id="mic-status">&nbsp;</span>
+        <div class="lang-toggle" id="lang-toggle">
+          <button type="button" data-lang="ar-EG" class="lang-btn active">مصري</button>
+          <button type="button" data-lang="ar-SA" class="lang-btn">فصحى</button>
+          <button type="button" data-lang="en-US" class="lang-btn">English</button>
+        </div>
+      </div>
+      <p class="hint">اضغط Enter للحساب · قول "كمل" وعملية جديدة عشان تكمل من آخر نتيجة</p>
+
+      <div class="history">
+        <div class="history-title">
+          <span>السجل · History</span>
+          <span id="clear-history" style="cursor:pointer; text-decoration:underline;">مسح</span>
+        </div>
+        <div class="history-list" id="history-list"></div>
+      </div>
+
+      <details class="legend">
+        <summary>الكلمات المدعومة · Supported words</summary>
+        <div class="legend-grid">
+          <div class="legend-group">
+            <h4>جمع وطرح · Add / Subtract</h4>
+            <p>زائد، اجمع، جمع، +<br>ناقص، اطرح، طرح، -<br><span class="ex">plus, add, minus, subtract</span></p>
+          </div>
+          <div class="legend-group">
+            <h4>ضرب وقسمة · Multiply / Divide</h4>
+            <p>في، اضرب، ضرب، ×<br>على، اقسم، قسمة، ÷<br><span class="ex">times, multiply, divide, over</span></p>
+          </div>
+          <div class="legend-group">
+            <h4>جذر وأس · Root / Power</h4>
+            <p>جذر، الجذر التربيعي<br>جذر تكعيبي، الجذر التكعيبي<br>أس، قوة<br><span class="ex">sqrt, square root, cube root, power</span></p>
+          </div>
+          <div class="legend-group">
+            <h4>نسبة مئوية · Percent</h4>
+            <p>مثال: عشرين بالمية من مية<br><span class="ex">e.g. "20 percent of 100"</span></p>
+          </div>
+          <div class="legend-group">
+            <h4>الأرقام كلام · Numbers as words</h4>
+            <p>صفر لحد تسعة وتسعين، وميه، وألف<br><span class="ex">zero to thousands, in Arabic or English</span></p>
+          </div>
+          <div class="legend-group">
+            <h4>الكسور · Fractions</h4>
+            <p>نص، تلت، تلتين، ربع، تلاتة ارباع، سدس، تمن<br><span class="ex">half, third, two thirds, quarter, three quarters, sixth, eighth</span></p>
+          </div>
+          <div class="legend-group">
+            <h4>كمل · Continue</h4>
+            <p>لو قلت "زائد خمسة" لوحدها هتكمل من آخر نتيجة<br><span class="ex">"plus five" alone continues from the last answer</span></p>
+          </div>
+        </div>
+      </details>
+
+      <footer>سُمّيت على اسم بيت الحكمة ببغداد، حيث اشتغل الخوارزمي على علم الحساب · Named after Baghdad's House of Wisdom, where al-Khwarizmi worked on the science of calculation</footer>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+
+  // ---------- number word dictionary ----------
+  const NUM_WORDS = {
+    // English units
+    'zero':{v:0,t:'unit'}, 'one':{v:1,t:'unit'}, 'two':{v:2,t:'unit'}, 'three':{v:3,t:'unit'},
+    'four':{v:4,t:'unit'}, 'five':{v:5,t:'unit'}, 'six':{v:6,t:'unit'}, 'seven':{v:7,t:'unit'},
+    'eight':{v:8,t:'unit'}, 'nine':{v:9,t:'unit'},
+    'ten':{v:10,t:'teen'}, 'eleven':{v:11,t:'teen'}, 'twelve':{v:12,t:'teen'}, 'thirteen':{v:13,t:'teen'},
+    'fourteen':{v:14,t:'teen'}, 'fifteen':{v:15,t:'teen'}, 'sixteen':{v:16,t:'teen'}, 'seventeen':{v:17,t:'teen'},
+    'eighteen':{v:18,t:'teen'}, 'nineteen':{v:19,t:'teen'},
+    'twenty':{v:20,t:'ten'}, 'thirty':{v:30,t:'ten'}, 'forty':{v:40,t:'ten'}, 'fifty':{v:50,t:'ten'},
+    'sixty':{v:60,t:'ten'}, 'seventy':{v:70,t:'ten'}, 'eighty':{v:80,t:'ten'}, 'ninety':{v:90,t:'ten'},
+    'hundred':{v:100,t:'hundred'}, 'thousand':{v:1000,t:'thousand'}, 'million':{v:1000000,t:'million'},
+
+    // Arabic (MSA + Egyptian colloquial), normalized alef/ta-marbuta forms included
+    'صفر':{v:0,t:'unit'},
+    'واحد':{v:1,t:'unit'}, 'احد':{v:1,t:'unit'},
+    'اتنين':{v:2,t:'unit'}, 'اثنين':{v:2,t:'unit'}, 'اثنان':{v:2,t:'unit'},
+    'تلاتة':{v:3,t:'unit'}, 'ثلاثة':{v:3,t:'unit'}, 'ثلاث':{v:3,t:'unit'}, 'تلات':{v:3,t:'unit'},
+    'اربعة':{v:4,t:'unit'}, 'أربعة':{v:4,t:'unit'}, 'اربع':{v:4,t:'unit'}, 'أربع':{v:4,t:'unit'},
+    'خمسة':{v:5,t:'unit'}, 'خمسه':{v:5,t:'unit'}, 'خمس':{v:5,t:'unit'},
+    'ستة':{v:6,t:'unit'}, 'سته':{v:6,t:'unit'}, 'ست':{v:6,t:'unit'},
+    'سبعة':{v:7,t:'unit'}, 'سبعه':{v:7,t:'unit'}, 'سبع':{v:7,t:'unit'},
+    'تمانية':{v:8,t:'unit'}, 'ثمانية':{v:8,t:'unit'}, 'تمانيه':{v:8,t:'unit'}, 'تمان':{v:8,t:'unit'}, 'ثمان':{v:8,t:'unit'},
+    'تسعة':{v:9,t:'unit'}, 'تسعه':{v:9,t:'unit'}, 'تسع':{v:9,t:'unit'},
+    'عشرة':{v:10,t:'teen'}, 'عشره':{v:10,t:'teen'}, 'عشر':{v:10,t:'teen'},
+    'حداشر':{v:11,t:'teen'}, 'احداشر':{v:11,t:'teen'}, 'إحداشر':{v:11,t:'teen'},
+    'اتناشر':{v:12,t:'teen'}, 'إتناشر':{v:12,t:'teen'},
+    'تلتاشر':{v:13,t:'teen'},
+    'اربعتاشر':{v:14,t:'teen'}, 'أربعتاشر':{v:14,t:'teen'},
+    'خمستاشر':{v:15,t:'teen'},
+    'سطاشر':{v:16,t:'teen'}, 'ستاشر':{v:16,t:'teen'},
+    'سبعتاشر':{v:17,t:'teen'},
+    'تمنتاشر':{v:18,t:'teen'},
+    'تسعتاشر':{v:19,t:'teen'},
+    'عشرين':{v:20,t:'ten'},
+    'تلاتين':{v:30,t:'ten'}, 'ثلاثين':{v:30,t:'ten'},
+    'اربعين':{v:40,t:'ten'}, 'أربعين':{v:40,t:'ten'},
+    'خمسين':{v:50,t:'ten'},
+    'ستين':{v:60,t:'ten'},
+    'سبعين':{v:70,t:'ten'},
+    'تمانين':{v:80,t:'ten'}, 'ثمانين':{v:80,t:'ten'},
+    'تسعين':{v:90,t:'ten'},
+    'ميه':{v:100,t:'hundred'}, 'مية':{v:100,t:'hundred'}, 'مئة':{v:100,t:'hundred'}, 'مائة':{v:100,t:'hundred'},
+    // compound hundreds written as one word (common in Egyptian Arabic)
+    'ميتين':{v:200,t:'unit'}, 'مئتان':{v:200,t:'unit'}, 'مئتين':{v:200,t:'unit'},
+    'تلتميه':{v:300,t:'unit'}, 'ثلاثمية':{v:300,t:'unit'}, 'ثلاثمائة':{v:300,t:'unit'},
+    'اربعميه':{v:400,t:'unit'}, 'ربعميه':{v:400,t:'unit'}, 'أربعمائة':{v:400,t:'unit'}, 'اربعمائة':{v:400,t:'unit'},
+    'خمسميه':{v:500,t:'unit'}, 'خمسمائة':{v:500,t:'unit'},
+    'ستميه':{v:600,t:'unit'}, 'ستمائة':{v:600,t:'unit'},
+    'سبعميه':{v:700,t:'unit'}, 'سبعمائة':{v:700,t:'unit'},
+    'تمنميه':{v:800,t:'unit'}, 'ثمانمائة':{v:800,t:'unit'},
+    'تسعميه':{v:900,t:'unit'}, 'تسعمائة':{v:900,t:'unit'},
+    'الف':{v:1000,t:'thousand'}, 'ألف':{v:1000,t:'thousand'},
+    'مليون':{v:1000000,t:'million'},
+
+    // fractions (Arabic + English)
+    'نص':{v:0.5,t:'unit'}, 'نصف':{v:0.5,t:'unit'}, 'half':{v:0.5,t:'unit'},
+    'تلت':{v:1/3,t:'unit'}, 'ثلث':{v:1/3,t:'unit'}, 'third':{v:1/3,t:'unit'},
+    'تلتين':{v:2/3,t:'unit'}, 'ثلثين':{v:2/3,t:'unit'}, 'two_thirds':{v:2/3,t:'unit'},
+    'ربع':{v:0.25,t:'unit'}, 'quarter':{v:0.25,t:'unit'}, 'quater':{v:0.25,t:'unit'},
+    'three_quarters':{v:0.75,t:'unit'},
+    'سدس':{v:1/6,t:'unit'}, 'sixth':{v:1/6,t:'unit'},
+    'سبع_كسر':{v:1/7,t:'unit'}, 'seventh':{v:1/7,t:'unit'},
+    'تمن':{v:0.125,t:'unit'}, 'ثمن':{v:0.125,t:'unit'}, 'eighth':{v:0.125,t:'unit'},
+    'تسع_كسر':{v:1/9,t:'unit'}, 'ninth':{v:1/9,t:'unit'},
+    'عشر_كسر':{v:0.1,t:'unit'}, 'tenth':{v:0.1,t:'unit'}
+  };
+
+  const OP_WORDS = {
+    '+':'+','زائد':'+','اجمع':'+','جمع':'+','ضيف':'+','plus':'+','add':'+','sum':'+',
+    '-':'-','ناقص':'-','اطرح':'-','طرح':'-','minus':'-','subtract':'-','subtracted':'-',
+    '*':'*','×':'*','x':'*','في':'*','ضرب':'*','اضرب':'*','times':'*','multiply':'*','multiplied':'*',
+    '/':'/','÷':'/','على':'/','اقسم':'/','قسمة':'/','قسمه':'/','تقسيم':'/','divide':'/','divided':'/','over':'/',
+    '^':'^','اس':'^','أس':'^','قوة':'^','قوه':'^','power':'^',
+    'جذر':'sqrt','sqrt':'sqrt','root':'sqrt',
+    'تكعيبي':'cbrt','تكعيبى':'cbrt','cbrt':'cbrt','cuberoot':'cbrt',
+    '%':'percent','بالمية':'percent','بالميه':'percent','نسبة':'percent','percent':'percent','percentage':'percent'
+  };
+
+  const IGNORE_WORDS = new Set(['و','the','a','an','is','equal','equals','يساوي','كام','قد','ايه','to','?','؟','،',',','.', '=']);
+
+  const MULTI_WORD_PHRASES = [
+    ['divided','by','/'],
+    ['multiplied','by','*'],
+    ['square','root','sqrt'],
+    ['to','the','power','of','power'],
+    ['power','of','power'],
+    ['الجذر','التربيعي','جذر'],
+    ['cube','root','cbrt'],
+    ['جذر','تكعيبي','cbrt'],
+    ['جذر','تكعيبى','cbrt'],
+    ['الجذر','التكعيبي','cbrt'],
+    ['الجذر','التكعيبى','cbrt'],
+    ['two','thirds','two_thirds'],
+    ['تلاتة','ارباع','three_quarters'],
+    ['ثلاثة','أرباع','three_quarters'],
+    ['ثلاثة','ارباع','three_quarters'],
+    ['three','quarters','three_quarters'],
+    ['سبع','كسر','سبع_كسر'],
+    ['تسع','كسر','تسع_كسر'],
+    ['عشر','كسر','عشر_كسر']
+  ];
+
+  // ---------- normalization ----------
+  function normalize(str){
+    let s = str.trim().toLowerCase();
+    // arabic-indic digits -> ascii
+    const arabicDigits = '٠١٢٣٤٥٦٧٨٩';
+    s = s.replace(/[٠-٩]/g, d => arabicDigits.indexOf(d));
+    s = s.replace(/٪/g, '%');
+    // strip diacritics & tatweel
+    s = s.replace(/[\u064B-\u0652\u0640]/g,'');
+    // normalize alef & ta-marbuta variants for matching
+    s = s.replace(/[إأآ]/g,'ا');
+    // space out symbol operators typed with no surrounding spaces (e.g. "1+2", "20%")
+    // minus is handled separately so a leading "-5" still reads as negative five
+    s = s.replace(/(?<=[0-9\u0600-\u06FF])-(?=[0-9\u0600-\u06FF])/g, ' - ');
+    s = s.replace(/([+*×÷/^%=])/g, ' $1 ');
+    return s;
+  }
+
+  function applyMultiWordPhrases(tokens){
+    for(const phrase of MULTI_WORD_PHRASES){
+      const words = phrase.slice(0,-1);
+      const replacement = phrase[phrase.length-1];
+      let out = [];
+      let i = 0;
+      while(i < tokens.length){
+        if(words.every((w,j)=> tokens[i+j] === w)){
+          out.push(replacement);
+          i += words.length;
+        } else {
+          out.push(tokens[i]);
+          i++;
+        }
+      }
+      tokens = out;
+    }
+    return tokens;
+  }
+
+  function tokenize(raw){
+    const norm = normalize(raw);
+    let tokens = norm.split(/[\s,،؟?]+/).filter(Boolean);
+    tokens = applyMultiWordPhrases(tokens);
+    return tokens;
+  }
+
+  // ---------- token stream -> {num}/{op}/{of} list ----------
+  function buildStream(tokens){
+    const out = [];
+    let total = 0, current = 0, hasWord = false;
+
+    function flush(){
+      if(hasWord){
+        out.push({num: total + current});
+        total = 0; current = 0; hasWord = false;
+      }
+    }
+
+    for(let tok of tokens){
+      if(IGNORE_WORDS.has(tok)) continue;
+
+      if(/^-?\d+(\.\d+)?$/.test(tok)){
+        flush();
+        out.push({num: parseFloat(tok)});
+        continue;
+      }
+
+      // Arabic "و" (and) is usually written attached to the next word
+      // (وخمسة، وعشرين) rather than as its own token — strip it when the
+      // remainder is a recognized number or operator word.
+      if(tok.length > 1 && tok[0] === 'و' && !NUM_WORDS.hasOwnProperty(tok) && !OP_WORDS.hasOwnProperty(tok)){
+        const stripped = tok.slice(1);
+        if(NUM_WORDS.hasOwnProperty(stripped) || OP_WORDS.hasOwnProperty(stripped) || stripped === 'من'){
+          tok = stripped;
+        }
+      }
+
+      if(NUM_WORDS.hasOwnProperty(tok)){
+        hasWord = true;
+        const entry = NUM_WORDS[tok];
+        if(entry.t === 'unit' || entry.t === 'teen' || entry.t === 'ten'){
+          current += entry.v;
+        } else if(entry.t === 'hundred'){
+          current = (current === 0 ? 1 : current) * 100;
+          total += current; current = 0;
+        } else if(entry.t === 'thousand'){
+          current = (current === 0 ? 1 : current) * 1000;
+          total += current; current = 0;
+        } else if(entry.t === 'million'){
+          current = (current === 0 ? 1 : current) * 1000000;
+          total += current; current = 0;
+        }
+        continue;
+      }
+
+      if(tok === 'of' || tok === 'من'){
+        flush();
+        out.push({of:true});
+        continue;
+      }
+
+      if(OP_WORDS.hasOwnProperty(tok)){
+        flush();
+        out.push({op: OP_WORDS[tok]});
+        continue;
+      }
+      // unknown word: ignore silently (keeps parser forgiving)
+    }
+    flush();
+    return out;
+  }
+
+  // ---------- evaluate ----------
+  function evaluate(tokens, lastAnswer){
+    if(tokens.length === 0) return {error:true};
+
+    // unary sqrt / cbrt
+    let step = [];
+    for(let i=0;i<tokens.length;i++){
+      const t = tokens[i];
+      if(t.op === 'sqrt' || t.op === 'cbrt'){
+        let j = i + 1;
+        if(tokens[j] && tokens[j].of) j++;
+        const next = tokens[j];
+        if(next && next.num !== undefined){
+          const val = t.op === 'sqrt' ? Math.sqrt(next.num) : Math.cbrt(next.num);
+          step.push({num: val});
+          i = j;
+          continue;
+        }
+      }
+      step.push(t);
+    }
+    tokens = step;
+
+    // percent (with optional "of")
+    step = [];
+    for(let i=0;i<tokens.length;i++){
+      const t = tokens[i];
+      if(t.op === 'percent'){
+        const prev = step[step.length-1];
+        const next = tokens[i+1];
+        const afterOf = tokens[i+2];
+        if(next && next.of && afterOf && afterOf.num !== undefined && prev && prev.num !== undefined){
+          step.pop();
+          step.push({num: (prev.num/100) * afterOf.num});
+          i += 2;
+          continue;
+        } else if(prev && prev.num !== undefined){
+          step.pop();
+          step.push({num: prev.num/100});
+          continue;
+        }
+      }
+      if(t.of) continue;
+      step.push(t);
+    }
+    tokens = step;
+
+    if(tokens.length === 0) return {error:true};
+
+    // continue from last answer if it starts with an operator
+    if(tokens[0].op && lastAnswer !== null && lastAnswer !== undefined){
+      tokens = [{num:lastAnswer}, ...tokens];
+    }
+
+    if(tokens.length === 1 && tokens[0].num !== undefined){
+      return {value: tokens[0].num};
+    }
+
+    if(tokens[0].num === undefined) return {error:true};
+
+    // pass 1: * / ^
+    let pass1 = [tokens[0]];
+    for(let i=1;i<tokens.length;i+=2){
+      const op = tokens[i], nextNum = tokens[i+1];
+      if(!op || op.num !== undefined || !nextNum || nextNum.num === undefined) return {error:true};
+      if(op.op === '*' || op.op === '/' || op.op === '^'){
+        const prev = pass1.pop();
+        let val;
+        if(op.op === '*') val = prev.num * nextNum.num;
+        else if(op.op === '/') val = prev.num / nextNum.num;
+        else val = Math.pow(prev.num, nextNum.num);
+        pass1.push({num: val});
+      } else {
+        pass1.push(op);
+        pass1.push(nextNum);
+      }
+    }
+
+    // pass 2: + -
+    let result = pass1[0].num;
+    for(let i=1;i<pass1.length;i+=2){
+      const op = pass1[i], nextNum = pass1[i+1];
+      if(!op || !nextNum) return {error:true};
+      if(op.op === '+') result += nextNum.num;
+      else if(op.op === '-') result -= nextNum.num;
+      else return {error:true};
+    }
+
+    if(!isFinite(result)) return {error:true, msg:'undefined'};
+    return {value: result};
+  }
+
+  function formatNumber(n){
+    if(Object.is(n,-0)) n = 0;
+    const rounded = Math.round(n * 1e6) / 1e6;
+    return rounded.toString();
+  }
+
+  // ---------- UI wiring ----------
+  const form = document.getElementById('calc-form');
+  const input = document.getElementById('calc-input');
+  const trailEl = document.getElementById('trail');
+  const answerEl = document.getElementById('answer');
+  const historyList = document.getElementById('history-list');
+  const clearBtn = document.getElementById('clear-history');
+
+  let lastAnswer = null;
+
+  function containsArabic(str){
+    return /[\u0600-\u06FF]/.test(str);
+  }
+
+  function addHistory(rawInput, resultText){
+    const item = document.createElement('div');
+    item.className = 'history-item';
+    const inSpan = document.createElement('span');
+    inSpan.className = 'h-in';
+    inSpan.textContent = rawInput;
+    inSpan.dir = containsArabic(rawInput) ? 'rtl' : 'ltr';
+    const outSpan = document.createElement('span');
+    outSpan.className = 'h-out';
+    outSpan.textContent = resultText;
+    item.appendChild(inSpan);
+    item.appendChild(outSpan);
+    historyList.insertBefore(item, historyList.firstChild);
+  }
+
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    const raw = input.value.trim();
+    if(!raw) return;
+
+    // "continue" keyword alone just re-shows the last answer
+    const normRaw = normalize(raw);
+    if(['كمل','continue'].includes(normRaw)){
+      trailEl.textContent = lastAnswer !== null ? 'آخر نتيجة · last answer' : ' ';
+      answerEl.classList.remove('error');
+      answerEl.textContent = lastAnswer !== null ? formatNumber(lastAnswer) : '؟';
+      input.value = '';
+      return;
+    }
+
+    const tokens = tokenize(raw);
+    const stream = buildStream(tokens);
+    const result = evaluate(stream, lastAnswer);
+
+    if(result.error){
+      answerEl.classList.add('error');
+      answerEl.textContent = 'مش فاهم العملية دي 🤔 · Could not understand that';
+      trailEl.textContent = raw;
+      trailEl.dir = containsArabic(raw) ? 'rtl' : 'ltr';
+    } else {
+      answerEl.classList.remove('error');
+      answerEl.textContent = formatNumber(result.value);
+      trailEl.textContent = raw;
+      trailEl.dir = containsArabic(raw) ? 'rtl' : 'ltr';
+      lastAnswer = result.value;
+      addHistory(raw, formatNumber(result.value));
+    }
+
+    input.value = '';
+    input.focus();
+  });
+
+  clearBtn.addEventListener('click', function(){
+    historyList.innerHTML = '';
+    lastAnswer = null;
+    trailEl.textContent = ' ';
+    answerEl.classList.remove('error');
+    answerEl.textContent = '؟';
+  });
+
+  // ---------- voice input ----------
+  const micBtn = document.getElementById('mic-btn');
+  const micStatus = document.getElementById('mic-status');
+  const langToggle = document.getElementById('lang-toggle');
+  const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  let recogLang = 'ar-EG';
+  langToggle.addEventListener('click', function(e){
+    const btn = e.target.closest('.lang-btn');
+    if(!btn) return;
+    recogLang = btn.dataset.lang;
+    langToggle.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b === btn));
+  });
+
+  if(!SpeechRecognitionCtor){
+    micBtn.style.display = 'none';
+    micStatus.textContent = 'المتصفح ده مش بيدعم التسجيل الصوتي · This browser doesn\u2019t support voice input';
+  } else {
+    if(location.protocol === 'file:' && !location.hostname){
+      // Speech Recognition needs a secure context (https or localhost) in most browsers.
+      // Keep the button visible (some browsers still allow it) but warn up front.
+      micStatus.textContent = 'لو الميك ملقاش إذن، افتح الملف من متصفح Chrome أو ارفعه على سيرفر (https) · If the mic can\u2019t get permission, try Chrome or serve this page over https';
+    }
+    let recognition;
+    try{
+      recognition = new SpeechRecognitionCtor();
+    } catch(err){
+      micBtn.style.display = 'none';
+      micStatus.textContent = 'مش قادر أشغل التسجيل الصوتي هنا · Voice input isn\u2019t available in this environment';
+    }
+    if(recognition){
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 5;
+
+    let listening = false;
+
+    micBtn.addEventListener('click', function(){
+      if(listening){
+        recognition.stop();
+        return;
+      }
+      recognition.lang = recogLang;
+      try{
+        recognition.start();
+      } catch(err){
+        // recognition may already be running in some browsers; ignore
+      }
+    });
+
+    recognition.addEventListener('start', function(){
+      listening = true;
+      micBtn.classList.add('listening');
+      micStatus.textContent = recogLang.startsWith('ar') ? 'بسمعك… اتكلم دلوقتي' : 'Listening… speak now';
+    });
+
+    recognition.addEventListener('end', function(){
+      listening = false;
+      micBtn.classList.remove('listening');
+      micStatus.textContent = '\u00a0';
+    });
+
+    recognition.addEventListener('error', function(event){
+      listening = false;
+      micBtn.classList.remove('listening');
+      if(event.error === 'not-allowed' || event.error === 'service-not-allowed'){
+        micStatus.textContent = recogLang.startsWith('ar') ? 'محتاج إذن الميكروفون' : 'Microphone permission needed';
+      } else if(event.error === 'no-speech'){
+        micStatus.textContent = recogLang.startsWith('ar') ? 'مسمعتش حاجة، جرب تاني' : "Didn't catch that, try again";
+      } else if(event.error === 'language-not-supported'){
+        micStatus.textContent = recogLang.startsWith('ar') ? 'اللهجة دي مش مدعومة في المتصفح ده' : 'This dialect isn\u2019t supported by your browser';
+      } else {
+        micStatus.textContent = recogLang.startsWith('ar') ? 'حصلت مشكلة في التسجيل' : 'Voice input error';
+      }
+    });
+
+    recognition.addEventListener('result', function(event){
+      const alternatives = event.results[0];
+      let chosen = alternatives[0].transcript;
+      let matched = false;
+
+      // try every alternative the recognizer heard; use the first one
+      // that actually parses into a valid calculation
+      for(let i = 0; i < alternatives.length; i++){
+        const candidate = alternatives[i].transcript;
+        const candidateTokens = tokenize(candidate);
+        const candidateStream = buildStream(candidateTokens);
+        const candidateResult = evaluate(candidateStream, lastAnswer);
+        if(!candidateResult.error){
+          chosen = candidate;
+          matched = true;
+          break;
+        }
+      }
+
+      input.value = chosen;
+      if(matched){
+        form.requestSubmit ? form.requestSubmit() : form.dispatchEvent(new Event('submit', {cancelable:true}));
+      } else {
+        micStatus.textContent = recogLang.startsWith('ar') ? 'مسمعتش صح — عدّل النص وادوس احسب' : "Didn't catch that clearly — edit the text and press Calculate";
+      }
+    });
+    }
+  }
+
+})();
+</script>
+</body>
+</html>
